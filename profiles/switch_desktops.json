@@ -1,0 +1,26 @@
+{
+  "name": "Switch Desktops",
+  "mappings": {
+    "side_forward": {
+      "preset": "space_right",
+      "key": "right",
+      "modifiers": [
+        "ctrl"
+      ],
+      "label": "Switch Space Right",
+      "description": "Move to right desktop space"
+    },
+    "side_back": {
+      "preset": "space_left",
+      "key": "left",
+      "modifiers": [
+        "ctrl"
+      ],
+      "label": "Switch Space Left",
+      "description": "Move to left desktop space"
+    }
+  },
+  "app_bundle_id": null,
+  "created_at": 1773074155.325836,
+  "updated_at": 1775485663.092412
+}

@@ -1,0 +1,617 @@
+/* ═══════════════════════════════════════════════════════════
+   Razer Viper Mini Button Mapper — UI Styles
+   Dark theme inspired by Razer Synapse
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #252525;
+    --bg-card: #1e1e1e;
+    --bg-hover: #2a2a2a;
+    --accent: #44d62c;         /* Razer Green */
+    --accent-dim: #2d8f1e;
+    --accent-glow: rgba(68, 214, 44, 0.3);
+    --text-primary: #e8e8e8;
+    --text-secondary: #999;
+    --text-muted: #666;
+    --border: #333;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --info: #3498db;
+    --radius: 8px;
+    --radius-sm: 4px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    color: #000;
+}
+
+.header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.header h1 span {
+    color: var(--accent);
+}
+
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.status-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.status-dot.warning {
+    background: var(--warning);
+}
+
+/* ── Main Layout ─────────────────────────────────────────── */
+.main-container {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 0;
+    min-height: calc(100vh - 69px);
+}
+
+/* ── Mouse Visualization Panel ───────────────────────────── */
+.mouse-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+}
+
+.mouse-container {
+    position: relative;
+    width: 300px;
+    height: 520px;
+}
+
+/* SVG Mouse body */
+.mouse-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.mouse-body {
+    fill: var(--bg-tertiary);
+    stroke: var(--border);
+    stroke-width: 2;
+    transition: all 0.2s;
+}
+
+.mouse-button-zone {
+    fill: transparent;
+    stroke: var(--border);
+    stroke-width: 1;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.mouse-button-zone:hover {
+    fill: rgba(68, 214, 44, 0.1);
+    stroke: var(--accent);
+}
+
+.mouse-button-zone.active {
+    fill: rgba(68, 214, 44, 0.25);
+    stroke: var(--accent);
+    stroke-width: 2;
+}
+
+.mouse-button-zone.pressed {
+    fill: rgba(68, 214, 44, 0.5);
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.mouse-button-zone.selected {
+    fill: rgba(68, 214, 44, 0.15);
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 6 3;
+}
+
+.button-label {
+    fill: var(--text-secondary);
+    font-size: 11px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    pointer-events: none;
+    text-anchor: middle;
+}
+
+.button-label.active {
+    fill: var(--accent);
+    font-weight: 600;
+}
+
+/* Controls below mouse */
+.controls-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+/* ── Sidebar (Config Panel) ──────────────────────────────── */
+.sidebar {
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+}
+
+/* Button config */
+.button-config-empty {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 30px 20px;
+    line-height: 1.6;
+}
+
+.config-button-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.config-current {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+/* Preset grid */
+.preset-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.preset-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.preset-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-dim);
+}
+
+.preset-item.active {
+    background: rgba(68, 214, 44, 0.1);
+    border-color: var(--accent);
+}
+
+.preset-item-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.preset-item-shortcut {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+/* Custom shortcut recorder */
+.custom-shortcut-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.shortcut-recorder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.shortcut-display {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.shortcut-display:hover {
+    border-color: var(--accent-dim);
+}
+
+.shortcut-display.recording {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--accent-glow); }
+    50% { box-shadow: 0 0 0 4px rgba(68, 214, 44, 0.15); }
+}
+
+/* Profile section */
+.profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.profile-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.profile-item:hover {
+    background: var(--bg-hover);
+}
+
+.profile-item.active {
+    border-color: var(--accent);
+    background: rgba(68, 214, 44, 0.08);
+}
+
+.profile-item-name {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.profile-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.profile-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+/* Event log */
+.event-log {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+}
+
+.event-log-entry {
+    padding: 3px 0;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 8px;
+}
+
+.event-log-entry .time {
+    color: var(--text-muted);
+    min-width: 70px;
+}
+
+.event-log-entry .btn-name {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.event-log-entry .ev-type {
+    color: var(--text-muted);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-family: inherit;
+}
+
+.btn:hover {
+    background: var(--bg-hover);
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background: #5ae040;
+}
+
+.btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.btn-danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn-icon {
+    padding: 6px 8px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ── Modal ───────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 360px;
+    max-width: 500px;
+    box-shadow: var(--shadow);
+}
+
+.modal h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.modal input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 16px;
+}
+
+.modal input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ── Toggle Switch ───────────────────────────────────────── */
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+}
+
+.toggle input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+    background: var(--accent);
+}
+
+.toggle-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* ── Toast Notification ──────────────────────────────────── */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toast {
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    box-shadow: var(--shadow);
+    animation: slideIn 0.3s ease;
+    max-width: 320px;
+}
+
+.toast.success {
+    border-color: var(--accent);
+}
+
+.toast.error {
+    border-color: var(--danger);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}

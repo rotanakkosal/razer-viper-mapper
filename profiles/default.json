@@ -1,0 +1,24 @@
+{
+  "name": "Default",
+  "app_bundle_id": null,
+  "mappings": {
+    "side_back": {
+      "preset": "mission_control",
+      "key": "up",
+      "label": "Mission Control",
+      "modifiers": [
+        "ctrl"
+      ],
+      "description": "Show all windows and spaces"
+    },
+    "side_forward": {
+      "preset": "app_switch",
+      "key": "tab",
+      "label": "App Switcher",
+      "modifiers": [
+        "cmd"
+      ],
+      "description": "Switch between applications"
+    }
+  }
+}

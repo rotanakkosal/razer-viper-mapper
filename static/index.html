@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razer Viper Mini — Button Mapper</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2344d62c'/><text x='16' y='23' font-size='20' text-anchor='middle' fill='black' font-weight='bold'>R</text></svg>">
+</head>
+<body>
+
+<!-- ═══ Header ═══════════════════════════════════════════════ -->
+<header class="header">
+    <div class="header-left">
+        <div class="logo">R</div>
+        <h1>Viper Mini <span>Button Mapper</span></h1>
+    </div>
+    <div class="status-bar">
+        <div class="status-indicator">
+            <div class="status-dot" id="status-connection"></div>
+            <span id="status-connection-label">Connecting...</span>
+        </div>
+        <div class="status-indicator">
+            <div class="status-dot" id="status-detection"></div>
+            <span id="status-detection-label">Idle</span>
+        </div>
+    </div>
+</header>
+
+<!-- ═══ Main Layout ══════════════════════════════════════════ -->
+<div class="main-container">
+
+    <!-- ── Mouse Visualization Panel ──────────────────────── -->
+    <div class="mouse-panel">
+        <div id="mouse-container" class="mouse-container"></div>
+
+        <div class="controls-row">
+            <button class="btn btn-primary" id="detect-btn" onclick="toggleDetection()">
+                Start Detection
+            </button>
+            <div class="toggle-wrapper">
+                <label class="toggle">
+                    <input type="checkbox" id="remapping-toggle" onchange="toggleRemapping()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Enable Remapping</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 14px; font-size: 11px; color: var(--text-muted); text-align: center; max-width: 360px; line-height: 1.5;">
+            Click a button on the mouse above to configure it.
+            Start detection to see real-time button presses light up.
+            Enable remapping to activate your custom shortcuts.
+        </div>
+    </div>
+
+    <!-- ── Sidebar ────────────────────────────────────────── -->
+    <div class="sidebar">
+
+        <!-- Button Configuration -->
+        <div class="sidebar-section">
+            <h3>Button Configuration</h3>
+            <div id="config-panel">
+                <div class="button-config-empty">
+                    Click a button on the mouse<br/>to configure it
+                </div>
+            </div>
+        </div>
+
+        <!-- Profiles -->
+        <div class="sidebar-section">
+            <h3>Profiles</h3>
+            <div id="profile-list" class="profile-list">
+                <div style="color: var(--text-muted); font-size: 13px;">Loading...</div>
+            </div>
+            <div class="profile-actions">
+                <button class="btn btn-primary btn-sm" onclick="showSaveProfileModal()">
+                    Save Current
+                </button>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="sidebar-section">
+            <h3>Event Log</h3>
+            <div id="event-log" class="event-log">
+                <div style="color: var(--text-muted); font-size: 12px;">
+                    Start detection to see events...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Modal ════════════════════════════════════════════════ -->
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ═══ Toast Container ══════════════════════════════════════ -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ═══ Scripts ═══════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+<script src="/static/app.js"></script>
+
+</body>
+</html>

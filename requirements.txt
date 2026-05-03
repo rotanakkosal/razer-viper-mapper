@@ -1,0 +1,5 @@
+flask
+flask-socketio
+pyobjc-core
+pyobjc-framework-Quartz
+pyobjc-framework-Cocoa
