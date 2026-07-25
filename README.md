@@ -5,6 +5,7 @@ A lightweight macOS application to detect and remap all Razer Viper Mini mouse b
 ## Features
 
 - **Real-time button detection** — see every button press light up on an interactive mouse diagram
+- **Smooth scrolling** — Mac-Mouse-Fix-style momentum scrolling: wheel ticks are replaced with an eased, pixel-precise glide (adjustable speed and glide, trackpad unaffected)
 - **25+ preset macOS shortcuts** — Mission Control, Screenshot, App Switcher, Spotlight, and more
 - **Custom key combos** — map any button to any Cmd/Option/Ctrl/Shift + Key combination
 - **Profile system** — save/load different configurations, assign profiles to specific apps
@@ -57,7 +58,10 @@ A lightweight macOS application to detect and remap all Razer Viper Mini mouse b
 3. **Click a button on the diagram** to open its configuration panel
 4. Choose a **preset shortcut** or create a **custom key combination**
 5. Toggle **"Enable Remapping"** to activate your mappings
-6. **Save your configuration** as a profile for later use
+6. Toggle **"Smooth Scrolling"** for momentum-based scrolling — tune **Speed** (distance per tick) and **Glide** (how long the scroll coasts) with the sliders
+7. **Save your configuration** as a profile for later use
+
+> Smooth scrolling needs detection running (the event tap does the work). It only smooths the mouse wheel's discrete ticks — trackpad scrolling passes through untouched. If a scroll direction is mapped to a shortcut, the shortcut wins over smoothing.
 
 ## How It Works
 

@@ -9,6 +9,8 @@ const state = {
     connected: false,
     detectionActive: false,
     remappingActive: false,
+    smoothScrollActive: false,
+    scrollSettings: { speed: 1.0, smoothness: 0.78 },
     selectedButton: null,
     currentProfile: null,
     mappings: {},
@@ -57,9 +59,12 @@ function initSocket() {
     state.socket.on("status", (data) => {
         state.detectionActive = data.detection_active;
         state.remappingActive = data.remapping_active;
+        state.smoothScrollActive = !!data.smooth_scroll_active;
+        if (data.scroll_settings) state.scrollSettings = data.scroll_settings;
         state.currentProfile = data.current_profile;
         updateDetectionStatus();
         updateRemappingToggle();
+        updateSmoothScrollUI();
         updateProfileHighlight();
     });
 
@@ -538,6 +543,53 @@ function toggleDetection() {
 function toggleRemapping() {
     const toggle = document.getElementById("remapping-toggle");
     state.socket.emit("toggle_remapping", { enabled: toggle.checked });
+}
+
+// ── Smooth scrolling controls ─────────────────────────────────
+function toggleSmoothScroll() {
+    const toggle = document.getElementById("smooth-scroll-toggle");
+    state.socket.emit("toggle_smooth_scroll", { enabled: toggle.checked });
+}
+
+let scrollSettingsTimer = null;
+function onScrollSettingInput() {
+    const speed = parseFloat(document.getElementById("scroll-speed").value);
+    const smoothness = parseFloat(document.getElementById("scroll-smoothness").value);
+    updateScrollSettingLabels(speed, smoothness);
+
+    // Debounce so dragging a slider doesn't flood the socket
+    clearTimeout(scrollSettingsTimer);
+    scrollSettingsTimer = setTimeout(() => {
+        state.socket.emit("set_scroll_settings", { speed, smoothness });
+    }, 150);
+}
+
+function glideLabel(smoothness) {
+    if (smoothness < 0.62) return "Snappy";
+    if (smoothness < 0.75) return "Regular";
+    if (smoothness < 0.86) return "Smooth";
+    return "Floaty";
+}
+
+function updateScrollSettingLabels(speed, smoothness) {
+    document.getElementById("scroll-speed-value").textContent = speed.toFixed(1) + "×";
+    document.getElementById("scroll-smoothness-value").textContent = glideLabel(smoothness);
+}
+
+function updateSmoothScrollUI() {
+    const toggle = document.getElementById("smooth-scroll-toggle");
+    if (toggle) toggle.checked = state.smoothScrollActive;
+
+    const settings = document.getElementById("scroll-settings");
+    if (settings) settings.classList.toggle("visible", state.smoothScrollActive);
+
+    const { speed, smoothness } = state.scrollSettings;
+    const speedEl = document.getElementById("scroll-speed");
+    const smoothEl = document.getElementById("scroll-smoothness");
+    // Don't yank sliders around while the user is dragging them
+    if (speedEl && document.activeElement !== speedEl) speedEl.value = speed;
+    if (smoothEl && document.activeElement !== smoothEl) smoothEl.value = smoothness;
+    updateScrollSettingLabels(speed, smoothness);
 }
 
 // ── Status updates ────────────────────────────────────────────

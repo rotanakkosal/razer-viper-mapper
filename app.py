@@ -11,6 +11,7 @@ Then open http://localhost:8080 in your browser.
 import os
 import sys
 import threading
+import time
 
 from flask import Flask, send_from_directory, jsonify, request
 from flask_socketio import SocketIO, emit
@@ -19,6 +20,7 @@ from mouse_detector import (
     MouseDetector, ALL_BUTTONS, BUTTON_NAMES, REMAPPABLE_BUTTONS,
 )
 from remapper import Remapper, PRESET_SHORTCUTS, KEY_CODES
+from smooth_scroll import SmoothScroller
 from profiles import ProfileManager
 
 # ── Flask app setup ──────────────────────────────────────────────
@@ -29,9 +31,53 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 # ── Core components ──────────────────────────────────────────────
 remapper = Remapper()
 profile_manager = ProfileManager()
+scroller = SmoothScroller()
 detector: MouseDetector = None
 detection_active = False
 remapping_active = False
+smooth_scroll_active = False
+
+# Minimum interval between shortcut executions for scroll-mapped buttons,
+# so fast wheel spins don't fire dozens of osascript processes.
+_SCROLL_EXEC_INTERVAL = 0.15
+_last_scroll_exec: dict = {}
+
+
+def _status_payload() -> dict:
+    """Common status dict sent to the UI."""
+    return {
+        "detection_active": detection_active,
+        "remapping_active": remapping_active,
+        "smooth_scroll_active": smooth_scroll_active,
+        "scroll_settings": {
+            "speed": scroller.speed,
+            "smoothness": scroller.smoothness,
+        },
+        "current_profile": profile_manager.current_profile_name,
+    }
+
+
+def _spawn_detector():
+    """(Re)create and start the detector with the current mode flags."""
+    global detector, detection_active
+    listen_only = not (remapping_active or smooth_scroll_active)
+    detector = MouseDetector(
+        on_button_press=on_button_press,
+        listen_only=listen_only,
+        on_intercept=on_intercept if not listen_only else None,
+        smooth_scroller=scroller if (smooth_scroll_active and not listen_only) else None,
+    )
+    detector.start()
+    detection_active = detector.is_running
+
+
+def _restart_detector_if_active():
+    """Apply new mode flags by restarting a running detector."""
+    global detector, detection_active
+    if detection_active and detector:
+        detector.stop()
+        detection_active = False
+        _spawn_detector()
 
 
 # ── Mouse event callbacks ────────────────────────────────────────
@@ -47,18 +93,22 @@ def on_button_press(button_id: str, event_type: str):
 def on_intercept(button_id: str, event_type: str) -> bool:
     """
     Called in remapping mode. Returns True to suppress the original event.
-    Only intercepts on 'down' events (not 'up') to avoid stuck states.
+    Intercepts 'down' and 'scroll' events (not 'up') to avoid stuck states.
     """
     if not remapping_active:
         return False
-    if event_type != "down":
+    if event_type not in ("down", "scroll"):
         return False
     if remapper.should_intercept(button_id):
+        if event_type == "scroll":
+            now = time.time()
+            if now - _last_scroll_exec.get(button_id, 0) < _SCROLL_EXEC_INTERVAL:
+                return True  # suppress the tick, but don't re-fire the shortcut
+            _last_scroll_exec[button_id] = now
         mapping = remapper.get_mapping(button_id)
         print(f"[App] Executing remap: {button_id} → {mapping.get('key')} + {mapping.get('modifiers')}")
         remapper.execute(button_id)
         return True
-    print(f"[App] No mapping for {button_id}")
     return False
 
 
@@ -132,35 +182,18 @@ def delete_profile(name):
 @socketio.on("connect")
 def handle_connect():
     print("[WebSocket] Client connected")
-    emit("status", {
-        "detection_active": detection_active,
-        "remapping_active": remapping_active,
-        "current_profile": profile_manager.current_profile_name,
-    })
+    emit("status", _status_payload())
 
 
 @socketio.on("start_detection")
 def handle_start_detection():
     """Start the mouse event detector."""
-    global detector, detection_active
     if detection_active:
         emit("error", {"message": "Detection already active"})
         return
 
-    listen_only = not remapping_active
-    detector = MouseDetector(
-        on_button_press=on_button_press,
-        listen_only=listen_only,
-        on_intercept=on_intercept if not listen_only else None,
-    )
-    detector.start()
-    detection_active = detector.is_running
-
-    emit("status", {
-        "detection_active": detection_active,
-        "remapping_active": remapping_active,
-        "current_profile": profile_manager.current_profile_name,
-    })
+    _spawn_detector()
+    emit("status", _status_payload())
 
     if detection_active:
         print("[App] Mouse detection started")
@@ -177,41 +210,44 @@ def handle_stop_detection():
     if detector:
         detector.stop()
     detection_active = False
+    scroller.stop()
 
-    emit("status", {
-        "detection_active": detection_active,
-        "remapping_active": remapping_active,
-        "current_profile": profile_manager.current_profile_name,
-    })
+    emit("status", _status_payload())
     print("[App] Mouse detection stopped")
 
 
 @socketio.on("toggle_remapping")
 def handle_toggle_remapping(data):
     """Enable or disable button remapping."""
-    global remapping_active, detector, detection_active
+    global remapping_active
     remapping_active = data.get("enabled", False)
 
-    # Restart detector with new mode if currently active
-    if detection_active and detector:
-        detector.stop()
-        detection_active = False
-
-        listen_only = not remapping_active
-        detector = MouseDetector(
-            on_button_press=on_button_press,
-            listen_only=listen_only,
-            on_intercept=on_intercept if not listen_only else None,
-        )
-        detector.start()
-        detection_active = detector.is_running
-
-    emit("status", {
-        "detection_active": detection_active,
-        "remapping_active": remapping_active,
-        "current_profile": profile_manager.current_profile_name,
-    })
+    _restart_detector_if_active()
+    emit("status", _status_payload())
     print(f"[App] Remapping {'enabled' if remapping_active else 'disabled'}")
+
+
+@socketio.on("toggle_smooth_scroll")
+def handle_toggle_smooth_scroll(data):
+    """Enable or disable Mac-Mouse-Fix-style smooth scrolling."""
+    global smooth_scroll_active
+    smooth_scroll_active = data.get("enabled", False)
+    if not smooth_scroll_active:
+        scroller.stop()
+
+    _restart_detector_if_active()
+    emit("status", _status_payload())
+    print(f"[App] Smooth scrolling {'enabled' if smooth_scroll_active else 'disabled'}")
+
+
+@socketio.on("set_scroll_settings")
+def handle_set_scroll_settings(data):
+    """Update smooth scrolling speed / glide settings."""
+    scroller.configure(
+        speed=data.get("speed"),
+        smoothness=data.get("smoothness"),
+    )
+    emit("status", _status_payload())
 
 
 @socketio.on("set_mapping")
@@ -319,4 +355,5 @@ if __name__ == "__main__":
         print("The UI will load, but button detection won't work.")
         print()
 
-    socketio.run(app, host="0.0.0.0", port=8080, debug=False)
+    socketio.run(app, host="0.0.0.0", port=8080, debug=False,
+                 allow_unsafe_werkzeug=True)

@@ -42,8 +42,12 @@ from Quartz import (
     kCGEventKeyUp,
     kCGMouseEventButtonNumber,
     kCGScrollWheelEventDeltaAxis1,
+    kCGScrollWheelEventIsContinuous,
     kCGKeyboardEventKeycode,
+    kCGEventSourceUserData,
 )
+
+from smooth_scroll import SmoothScroller, SMOOTH_SCROLL_EVENT_TAG
 
 
 _CGEVENT_TAP_DISABLED_BY_TIMEOUT = 0xFFFFFFFE
@@ -107,6 +111,10 @@ class MouseDetector:
                      If False, events can be intercepted/suppressed for remapping.
         on_intercept: Optional callback for remapping mode. Returns True to suppress
                       the original event, False to let it pass through.
+        smooth_scroller: Optional SmoothScroller. When set (and not listen_only),
+                         discrete wheel ticks are suppressed and fed to it,
+                         replacing notchy scrolling with a smooth glide.
+                         Trackpad (continuous) scrolling is left untouched.
     """
 
     def __init__(
@@ -114,10 +122,12 @@ class MouseDetector:
         on_button_press: Callable[[str, str], None],
         listen_only: bool = True,
         on_intercept: Optional[Callable[[str, str], bool]] = None,
+        smooth_scroller: Optional[SmoothScroller] = None,
     ):
         self.on_button_press = on_button_press
         self.listen_only = listen_only
         self.on_intercept = on_intercept
+        self.smooth_scroller = smooth_scroller
         self._thread: Optional[threading.Thread] = None
         self._running = False
         self._run_loop = None
@@ -147,6 +157,8 @@ class MouseDetector:
         button_id = None
         ev_type = "down"
         suppress = False
+        scroll_delta = 0
+        scroll_is_discrete = False
 
         if event_type in (kCGEventLeftMouseDown, kCGEventLeftMouseUp):
             elapsed = (time.time() - self._last_side_button_time) * 1000
@@ -171,12 +183,22 @@ class MouseDetector:
                 button_id = BUTTON_SIDE_FORWARD
 
         elif event_type == kCGEventScrollWheel:
+            # Ignore our own synthetic smooth-scroll events (no feedback loop)
+            if CGEventGetIntegerValueField(
+                    event, kCGEventSourceUserData) == SMOOTH_SCROLL_EVENT_TAG:
+                return event
             delta = CGEventGetIntegerValueField(event, kCGScrollWheelEventDeltaAxis1)
+            is_continuous = CGEventGetIntegerValueField(
+                event, kCGScrollWheelEventIsContinuous)
             if delta > 0:
                 button_id = BUTTON_SCROLL_UP
             elif delta < 0:
                 button_id = BUTTON_SCROLL_DOWN
             ev_type = "scroll"
+            scroll_delta = delta
+            # Only smooth discrete (mouse wheel) ticks — trackpads already
+            # send continuous pixel events and must pass through untouched.
+            scroll_is_discrete = not is_continuous and delta != 0
 
         elif event_type in (kCGEventKeyDown, kCGEventKeyUp):
             keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
@@ -202,6 +224,15 @@ class MouseDetector:
                     suppress = suppress or intercept_result
                 except Exception as e:
                     print(f"[MouseDetector] Intercept error: {e}")
+
+            # Smooth scrolling: swallow the notchy tick, glide instead.
+            # A scroll_up/scroll_down shortcut mapping takes precedence.
+            if (scroll_is_discrete
+                    and not suppress
+                    and not self.listen_only
+                    and self.smooth_scroller is not None):
+                self.smooth_scroller.add_ticks(scroll_delta)
+                suppress = True
 
         if suppress:
             return None
