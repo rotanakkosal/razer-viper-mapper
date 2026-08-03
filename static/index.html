@@ -9,6 +9,34 @@
 </head>
 <body>
 
+<!--
+  Opened straight from disk (file://), this page can't load its CSS/JS or
+  reach the backend, so it renders as unstyled text. Say so plainly instead
+  of looking broken. Inline on purpose: external scripts don't load here.
+-->
+<script>
+if (location.protocol === "file:") {
+    document.addEventListener("DOMContentLoaded", function () {
+        document.body.innerHTML =
+            '<div style="font:16px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;' +
+            'color:#e8e8e8;background:#0d0d0d;position:fixed;inset:0;display:flex;' +
+            'align-items:center;justify-content:center;text-align:center;padding:24px">' +
+            '<div style="max-width:460px">' +
+            '<div style="width:48px;height:48px;border-radius:10px;background:#44d62c;' +
+            'color:#000;font-weight:700;font-size:26px;line-height:48px;margin:0 auto 20px">R</div>' +
+            '<h1 style="font-size:20px;margin:0 0 12px">Open this from the server</h1>' +
+            '<p style="color:#999;margin:0 0 20px">You\'re viewing the raw HTML file. ' +
+            'It needs the Python backend for styling, the mouse diagram, and live events.</p>' +
+            '<a href="http://localhost:8080" style="display:inline-block;background:#44d62c;' +
+            'color:#000;font-weight:600;padding:11px 22px;border-radius:6px;text-decoration:none">' +
+            'Go to localhost:8080</a>' +
+            '<p style="color:#666;font-size:13px;margin:20px 0 0">Not loading? Check the service:<br>' +
+            '<code style="color:#999">./install_service.sh status</code></p>' +
+            '</div></div>';
+    });
+}
+</script>
+
 <!-- ═══ Header ═══════════════════════════════════════════════ -->
 <header class="header">
     <div class="header-left">
@@ -55,6 +83,15 @@
                 </label>
                 <span class="toggle-label">Smooth Scrolling</span>
             </div>
+            <div class="toggle-wrapper">
+                <label class="toggle">
+                    <input type="checkbox" id="autostart-toggle" onchange="toggleAutostart()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label" title="Restore these settings automatically when the app launches">
+                    Start Automatically
+                </span>
+            </div>
         </div>
 
         <div class="scroll-settings" id="scroll-settings">
@@ -64,7 +101,7 @@
                        oninput="onScrollSettingInput()">
             </div>
             <div class="scroll-setting">
-                <label>Glide <span class="scroll-setting-value" id="scroll-smoothness-value">Regular</span></label>
+                <label>Glide <span class="scroll-setting-value" id="scroll-smoothness-value">Smooth</span></label>
                 <input type="range" id="scroll-smoothness" min="0.5" max="0.92" step="0.01" value="0.78"
                        oninput="onScrollSettingInput()">
             </div>

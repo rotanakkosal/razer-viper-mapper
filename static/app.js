@@ -10,6 +10,7 @@ const state = {
     detectionActive: false,
     remappingActive: false,
     smoothScrollActive: false,
+    autostartEnabled: false,
     scrollSettings: { speed: 1.0, smoothness: 0.78 },
     selectedButton: null,
     currentProfile: null,
@@ -60,11 +61,13 @@ function initSocket() {
         state.detectionActive = data.detection_active;
         state.remappingActive = data.remapping_active;
         state.smoothScrollActive = !!data.smooth_scroll_active;
+        state.autostartEnabled = !!data.autostart_enabled;
         if (data.scroll_settings) state.scrollSettings = data.scroll_settings;
         state.currentProfile = data.current_profile;
         updateDetectionStatus();
         updateRemappingToggle();
         updateSmoothScrollUI();
+        updateAutostartToggle();
         updateProfileHighlight();
     });
 
@@ -543,6 +546,22 @@ function toggleDetection() {
 function toggleRemapping() {
     const toggle = document.getElementById("remapping-toggle");
     state.socket.emit("toggle_remapping", { enabled: toggle.checked });
+}
+
+function toggleAutostart() {
+    const toggle = document.getElementById("autostart-toggle");
+    state.socket.emit("set_autostart", { enabled: toggle.checked });
+    showToast(
+        toggle.checked
+            ? "Current settings will be restored at launch"
+            : "Autostart disabled",
+        "success"
+    );
+}
+
+function updateAutostartToggle() {
+    const toggle = document.getElementById("autostart-toggle");
+    if (toggle) toggle.checked = state.autostartEnabled;
 }
 
 // ── Smooth scrolling controls ─────────────────────────────────

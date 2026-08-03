@@ -19,3 +19,7 @@ env/
 
 # Logs / local state
 *.log
+
+# Local user settings (rewritten on every UI toggle; defaults live in settings.py)
+settings.json
+settings.json.tmp

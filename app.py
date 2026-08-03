@@ -22,6 +22,7 @@ from mouse_detector import (
 from remapper import Remapper, PRESET_SHORTCUTS, KEY_CODES
 from smooth_scroll import SmoothScroller
 from profiles import ProfileManager
+from settings import Settings
 
 # ── Flask app setup ──────────────────────────────────────────────
 app = Flask(__name__, static_folder="static")
@@ -29,9 +30,13 @@ app.config["SECRET_KEY"] = "razer-viper-mini-mapper"
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # ── Core components ──────────────────────────────────────────────
+settings = Settings()
 remapper = Remapper()
 profile_manager = ProfileManager()
-scroller = SmoothScroller()
+scroller = SmoothScroller(
+    speed=settings.section("scroll").get("speed", 1.0),
+    smoothness=settings.section("scroll").get("smoothness", 0.78),
+)
 detector: MouseDetector = None
 detection_active = False
 remapping_active = False
@@ -49,12 +54,23 @@ def _status_payload() -> dict:
         "detection_active": detection_active,
         "remapping_active": remapping_active,
         "smooth_scroll_active": smooth_scroll_active,
+        "autostart_enabled": settings.section("autostart").get("enabled", False),
         "scroll_settings": {
             "speed": scroller.speed,
             "smoothness": scroller.smoothness,
         },
         "current_profile": profile_manager.current_profile_name,
     }
+
+
+def _persist_runtime_state():
+    """Remember the current mode + profile for the next background launch."""
+    settings.update(
+        "autostart",
+        remapping=remapping_active,
+        smooth_scroll=smooth_scroll_active,
+        profile=profile_manager.current_profile_name,
+    )
 
 
 def _spawn_detector():
@@ -78,6 +94,51 @@ def _restart_detector_if_active():
         detector.stop()
         detection_active = False
         _spawn_detector()
+
+
+def apply_autostart():
+    """
+    Restore saved state at launch so the app is useful with no browser open.
+    Called once at startup — this is what makes background/LaunchAgent
+    operation actually work.
+    """
+    global remapping_active, smooth_scroll_active
+    auto = settings.section("autostart")
+
+    profile_name = auto.get("profile")
+    if profile_name:
+        profile = profile_manager.load_profile(profile_name)
+        if profile:
+            remapper.load_mappings(profile.mappings)
+            print(f"[App] Restored profile '{profile.name}'")
+        else:
+            print(f"[App] Saved profile '{profile_name}' not found — skipping")
+
+    # Always mirror the saved modes into memory, even when autostart is off.
+    # Otherwise the first UI toggle would persist these as False and quietly
+    # forget your setup, and "Start Detection" would run without remapping.
+    remapping_active = bool(auto.get("remapping"))
+    smooth_scroll_active = bool(auto.get("smooth_scroll"))
+
+    if not auto.get("enabled"):
+        print("[App] Autostart off — idle until you start detection in the UI.")
+        return
+
+    _spawn_detector()
+
+    if detection_active:
+        modes = []
+        if remapping_active:
+            modes.append("remapping")
+        if smooth_scroll_active:
+            modes.append("smooth scrolling")
+        print(f"[App] Autostart: detection running ({', '.join(modes) or 'detect only'})")
+    else:
+        print(
+            "[App] Autostart FAILED to start detection.\n"
+            "      Grant Accessibility + Input Monitoring to the binary that\n"
+            "      launched this app, then restart it."
+        )
 
 
 # ── Mouse event callbacks ────────────────────────────────────────
@@ -126,11 +187,9 @@ def static_files(filename):
 # ── REST API endpoints ───────────────────────────────────────────
 @app.route("/api/status")
 def get_status():
-    """Get current app status."""
+    """Get current app status (same fields as the WebSocket 'status' event)."""
     return jsonify({
-        "detection_active": detection_active,
-        "remapping_active": remapping_active,
-        "current_profile": profile_manager.current_profile_name,
+        **_status_payload(),
         "buttons": [
             {
                 "id": bid,
@@ -223,6 +282,7 @@ def handle_toggle_remapping(data):
     remapping_active = data.get("enabled", False)
 
     _restart_detector_if_active()
+    _persist_runtime_state()
     emit("status", _status_payload())
     print(f"[App] Remapping {'enabled' if remapping_active else 'disabled'}")
 
@@ -236,6 +296,7 @@ def handle_toggle_smooth_scroll(data):
         scroller.stop()
 
     _restart_detector_if_active()
+    _persist_runtime_state()
     emit("status", _status_payload())
     print(f"[App] Smooth scrolling {'enabled' if smooth_scroll_active else 'disabled'}")
 
@@ -247,7 +308,18 @@ def handle_set_scroll_settings(data):
         speed=data.get("speed"),
         smoothness=data.get("smoothness"),
     )
+    settings.update("scroll", speed=scroller.speed, smoothness=scroller.smoothness)
     emit("status", _status_payload())
+
+
+@socketio.on("set_autostart")
+def handle_set_autostart(data):
+    """Enable/disable restoring this state automatically at launch."""
+    enabled = bool(data.get("enabled", False))
+    settings.update("autostart", enabled=enabled)
+    _persist_runtime_state()
+    emit("status", _status_payload())
+    print(f"[App] Autostart {'enabled' if enabled else 'disabled'}")
 
 
 @socketio.on("set_mapping")
@@ -315,15 +387,12 @@ def handle_load_profile(data):
 
     if profile:
         remapper.load_mappings(profile.mappings)
+        _persist_runtime_state()
         emit("profile_loaded", {
             "name": profile.name,
             "mappings": remapper.get_all_mappings(),
         })
-        emit("status", {
-            "detection_active": detection_active,
-            "remapping_active": remapping_active,
-            "current_profile": profile.name,
-        })
+        emit("status", _status_payload())
     else:
         emit("error", {"message": f"Profile '{name}' not found"})
 
@@ -342,9 +411,13 @@ def handle_get_mappings():
 
 # ── Main entry point ─────────────────────────────────────────────
 if __name__ == "__main__":
+    host = settings.section("server").get("host", "127.0.0.1")
+    port = int(settings.section("server").get("port", 8080))
+    ui_host = "localhost" if host in ("127.0.0.1", "0.0.0.0") else host
+
     print("=" * 60)
     print("  Razer Viper Mini Button Mapper")
-    print("  Open http://localhost:8080 in your browser")
+    print(f"  Open http://{ui_host}:{port} in your browser")
     print("=" * 60)
     print()
 
@@ -355,5 +428,7 @@ if __name__ == "__main__":
         print("The UI will load, but button detection won't work.")
         print()
 
-    socketio.run(app, host="0.0.0.0", port=8080, debug=False,
+    apply_autostart()
+
+    socketio.run(app, host=host, port=port, debug=False,
                  allow_unsafe_werkzeug=True)

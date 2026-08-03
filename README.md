@@ -9,7 +9,8 @@ A lightweight macOS application to detect and remap all Razer Viper Mini mouse b
 - **25+ preset macOS shortcuts** — Mission Control, Screenshot, App Switcher, Spotlight, and more
 - **Custom key combos** — map any button to any Cmd/Option/Ctrl/Shift + Key combination
 - **Profile system** — save/load different configurations, assign profiles to specific apps
-- **Dark Razer-themed UI** — runs in your browser at localhost:5000
+- **Runs in the background** — install as a LaunchAgent and it starts at login with your settings restored, no terminal window required
+- **Dark Razer-themed UI** — runs in your browser at localhost:8080
 
 ## Detectable Buttons
 
@@ -49,7 +50,52 @@ A lightweight macOS application to detect and remap all Razer Viper Mini mouse b
    ```
 
 4. **Open in browser:**
-   Navigate to [http://localhost:5000](http://localhost:5000)
+   Navigate to [http://localhost:8080](http://localhost:8080)
+
+## Running in the Background (LaunchAgent)
+
+To stop babysitting a terminal window, install the app as a login service:
+
+```bash
+./install_service.sh
+```
+
+This writes `~/Library/LaunchAgents/com.vipermapper.agent.plist`, starts the app now, and restarts it at every login (and if it ever crashes).
+
+**One required extra step:** permissions are granted per-launcher, so your Terminal's Accessibility grant does *not* carry over to `launchd`. Add the Python binary itself to **both** Accessibility and Input Monitoring in System Settings → Privacy & Security. Use the **+** button, then press **Cmd+Shift+G** and paste the path the installer prints — it looks like:
+
+```
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+```
+
+Then run `./install_service.sh restart`.
+
+Finally, turn on **"Start Automatically"** in the UI. Without it the service boots idle and waits for you to click Start Detection in a browser — which defeats the point.
+
+| Command | Purpose |
+|---------|---------|
+| `./install_service.sh` | Install and start |
+| `./install_service.sh restart` | Reload after changing code |
+| `./install_service.sh status` | Check if it's running |
+| `./install_service.sh logs` | Tail `~/Library/Logs/viper-mapper.log` |
+| `./install_service.sh uninstall` | Stop and remove (keeps profiles/settings) |
+
+> **Note:** granting Accessibility to the shared Python binary means *any* Python script you run gains input-monitoring rights, and an Xcode Command Line Tools update can silently reset the grant. If that happens, detection stops working — re-add the binary and restart. A standalone signed `.app` bundle avoids both issues.
+
+## Settings
+
+`settings.json` (created on first run, git-ignored) stores your preferences:
+
+| Key | Meaning |
+|-----|---------|
+| `autostart.enabled` | Restore state at launch instead of booting idle |
+| `autostart.remapping` / `autostart.smooth_scroll` | Last-used modes, remembered automatically |
+| `autostart.profile` | Profile reloaded at launch |
+| `scroll.speed` / `scroll.smoothness` | Smooth scrolling tuning |
+| `server.host` | Defaults to `127.0.0.1`. Use `0.0.0.0` only if you deliberately want other devices on your network to control the mapper |
+| `server.port` | Defaults to `8080` |
+
+Everything except `server.*` is written automatically whenever you change it in the UI.
 
 ## Usage
 
@@ -88,7 +134,10 @@ razer-viper-mapper/
 ├── app.py              # Flask backend + WebSocket server
 ├── mouse_detector.py   # CGEventTap mouse event detection
 ├── remapper.py         # Button-to-shortcut remapping engine
+├── smooth_scroll.py    # Momentum scrolling engine
 ├── profiles.py         # Profile save/load manager
+├── settings.py         # Persistent settings + autostart config
+├── install_service.sh  # LaunchAgent installer (background service)
 ├── requirements.txt    # Python dependencies
 ├── profiles/           # Saved profile JSON files
 │   └── default.json

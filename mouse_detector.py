@@ -150,10 +150,6 @@ class MouseDetector:
                 CGEventTapEnable(self._tap, True)
             return event
 
-        if event_type in (kCGEventKeyDown, kCGEventKeyUp):
-            kc = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
-            print(f"[DEBUG] Keyboard event_type={event_type} keycode={kc}")
-
         button_id = None
         ev_type = "down"
         suppress = False
