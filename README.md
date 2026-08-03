@@ -2,6 +2,18 @@
 
 A lightweight macOS application to detect and remap all Razer Viper Mini mouse buttons to custom keyboard shortcuts. Built as an alternative to Razer Synapse for Mac.
 
+![The Viper Mini Button Mapper interface: an interactive mouse diagram on the left with the current button assignments and controls beside it, and profiles plus a live event log in the right sidebar.](docs/screenshot.png)
+
+## The Interface
+
+**Mouse diagram** — every remappable button is a clickable zone. Zones glow green when a mapping is assigned and flash on a real button press, so you can confirm the app sees your hardware. The DPI button is drawn dashed because onboard firmware handles it and macOS never sees it.
+
+**Assignments** — what each button currently does, at a glance. Click any row to jump to that button's configuration.
+
+**Controls** — start/stop detection, toggle remapping and smooth scrolling, and tune scroll speed and glide with live sliders. "Start Automatically" makes the app restore this exact state at launch, which is what lets it run as a background service.
+
+**Sidebar** — pick a preset or build a custom key combo for the selected button, switch between saved profiles, and watch button presses arrive in real time in the event log.
+
 ## Features
 
 - **Real-time button detection** — see every button press light up on an interactive mouse diagram
@@ -139,6 +151,8 @@ razer-viper-mapper/
 ├── settings.py         # Persistent settings + autostart config
 ├── install_service.sh  # LaunchAgent installer (background service)
 ├── requirements.txt    # Python dependencies
+├── docs/
+│   └── screenshot.png  # UI screenshot used in this README
 ├── profiles/           # Saved profile JSON files
 │   └── default.json
 └── static/
