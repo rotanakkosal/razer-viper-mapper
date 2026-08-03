@@ -60,58 +60,81 @@ if (location.protocol === "file:") {
 
     <!-- ── Mouse Visualization Panel ──────────────────────── -->
     <div class="mouse-panel">
+      <div class="mouse-stage">
         <div id="mouse-container" class="mouse-container"></div>
+        <p class="panel-hint">Click a button to configure it.</p>
+      </div>
 
-        <div class="controls-row">
-            <button class="btn btn-primary" id="detect-btn" onclick="toggleDetection()">
+      <div class="panel-side">
+        <!-- At-a-glance assignments. IDs match what app.js writes into. -->
+        <div class="assignments">
+            <div class="assignment" onclick="selectButton('side_forward')">
+                <span class="assignment-key">Side Forward</span>
+                <span class="assignment-val" id="mapping-side_forward"></span>
+            </div>
+            <div class="assignment" onclick="selectButton('side_back')">
+                <span class="assignment-key">Side Back</span>
+                <span class="assignment-val" id="mapping-side_back"></span>
+            </div>
+            <div class="assignment" onclick="selectButton('middle_click')">
+                <span class="assignment-key">Middle Click</span>
+                <span class="assignment-val" id="mapping-middle_click"></span>
+            </div>
+            <div class="assignment" onclick="selectButton('scroll_up')">
+                <span class="assignment-key">Scroll Up</span>
+                <span class="assignment-val" id="mapping-scroll_up"></span>
+            </div>
+            <div class="assignment" onclick="selectButton('scroll_down')">
+                <span class="assignment-key">Scroll Down</span>
+                <span class="assignment-val" id="mapping-scroll_down"></span>
+            </div>
+        </div>
+
+        <div class="controls-card">
+            <button class="btn btn-primary btn-block" id="detect-btn" onclick="toggleDetection()">
                 Start Detection
             </button>
-            <div class="toggle-wrapper">
-                <label class="toggle">
-                    <input type="checkbox" id="remapping-toggle" onchange="toggleRemapping()">
-                    <span class="toggle-slider"></span>
-                </label>
-                <span class="toggle-label">Enable Remapping</span>
-            </div>
-        </div>
 
-        <div class="controls-row">
-            <div class="toggle-wrapper">
-                <label class="toggle">
-                    <input type="checkbox" id="smooth-scroll-toggle" onchange="toggleSmoothScroll()">
-                    <span class="toggle-slider"></span>
-                </label>
-                <span class="toggle-label">Smooth Scrolling</span>
+            <div class="toggle-list">
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <input type="checkbox" id="remapping-toggle" onchange="toggleRemapping()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Enable Remapping</span>
+                </div>
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <input type="checkbox" id="smooth-scroll-toggle" onchange="toggleSmoothScroll()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Smooth Scrolling</span>
+                </div>
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <input type="checkbox" id="autostart-toggle" onchange="toggleAutostart()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label" title="Restore these settings automatically when the app launches">
+                        Start Automatically
+                    </span>
+                </div>
             </div>
-            <div class="toggle-wrapper">
-                <label class="toggle">
-                    <input type="checkbox" id="autostart-toggle" onchange="toggleAutostart()">
-                    <span class="toggle-slider"></span>
-                </label>
-                <span class="toggle-label" title="Restore these settings automatically when the app launches">
-                    Start Automatically
-                </span>
-            </div>
-        </div>
 
-        <div class="scroll-settings" id="scroll-settings">
-            <div class="scroll-setting">
-                <label>Speed <span class="scroll-setting-value" id="scroll-speed-value">1.0×</span></label>
-                <input type="range" id="scroll-speed" min="0.2" max="3" step="0.1" value="1"
-                       oninput="onScrollSettingInput()">
-            </div>
-            <div class="scroll-setting">
-                <label>Glide <span class="scroll-setting-value" id="scroll-smoothness-value">Smooth</span></label>
-                <input type="range" id="scroll-smoothness" min="0.5" max="0.92" step="0.01" value="0.78"
-                       oninput="onScrollSettingInput()">
+            <div class="scroll-settings" id="scroll-settings">
+                <div class="scroll-setting">
+                    <label>Speed <span class="scroll-setting-value" id="scroll-speed-value">1.0×</span></label>
+                    <input type="range" id="scroll-speed" min="0.2" max="3" step="0.1" value="1"
+                           oninput="onScrollSettingInput()">
+                </div>
+                <div class="scroll-setting">
+                    <label>Glide <span class="scroll-setting-value" id="scroll-smoothness-value">Smooth</span></label>
+                    <input type="range" id="scroll-smoothness" min="0.5" max="0.92" step="0.01" value="0.78"
+                           oninput="onScrollSettingInput()">
+                </div>
             </div>
         </div>
-
-        <div style="margin-top: 14px; font-size: 11px; color: var(--text-muted); text-align: center; max-width: 360px; line-height: 1.5;">
-            Click a button on the mouse above to configure it.
-            Start detection to see real-time button presses light up.
-            Enable remapping to activate your custom shortcuts.
-        </div>
+      </div>
     </div>
 
     <!-- ── Sidebar ────────────────────────────────────────── -->
@@ -141,7 +164,7 @@ if (location.protocol === "file:") {
         </div>
 
         <!-- Event Log -->
-        <div class="sidebar-section">
+        <div class="sidebar-section grow">
             <h3>Event Log</h3>
             <div id="event-log" class="event-log">
                 <div style="color: var(--text-muted); font-size: 12px;">

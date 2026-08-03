@@ -46,6 +46,10 @@ function initSocket() {
     state.socket.on("connect", () => {
         state.connected = true;
         updateConnectionStatus();
+        // The server may already be running with a profile loaded (it autostarts
+        // as a background service), so pull the live mappings rather than
+        // showing everything as unmapped until the user touches something.
+        state.socket.emit("get_mappings");
         console.log("[WS] Connected");
     });
 
@@ -140,86 +144,79 @@ async function loadProfiles() {
 function renderMouseSVG() {
     const container = document.getElementById("mouse-container");
     container.innerHTML = `
-    <svg viewBox="0 0 240 440" class="mouse-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Mouse body outline -->
-      <path class="mouse-body" d="
-        M 60 140
-        C 60 60, 80 20, 120 15
-        C 160 20, 180 60, 180 140
-        L 180 320
-        C 180 390, 160 420, 120 425
-        C 80 420, 60 390, 60 320
-        Z
-      "/>
+    <svg viewBox="0 0 300 400" class="mouse-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#333"/>
+          <stop offset="100%" stop-color="#1c1c1c"/>
+        </linearGradient>
+      </defs>
 
-      <!-- Scroll wheel -->
-      <rect x="108" y="100" width="24" height="50" rx="12"
+      <!-- Body: top view, flat front edge and ~0.5 width:height like the real Viper Mini -->
+      <path class="mouse-body" d="
+        M 112 28
+        C 96 34, 82 56, 76 100
+        C 66 158, 62 214, 66 272
+        C 70 332, 98 374, 150 376
+        C 202 374, 230 332, 234 272
+        C 238 214, 234 158, 224 100
+        C 218 56, 204 34, 188 28
+        C 176 24, 124 24, 112 28 Z"/>
+
+      <!-- Click split -->
+      <line x1="150" y1="25" x2="150" y2="196"
+            stroke="#4d4d4d" stroke-width="1"/>
+
+      <!-- Scroll wheel well -->
+      <rect x="136" y="92" width="28" height="58" rx="14"
             fill="var(--bg-primary)" stroke="var(--border)" stroke-width="1.5"/>
 
-      <!-- Divider line (left/right click separator) -->
-      <line x1="120" y1="15" x2="120" y2="140" stroke="var(--border)" stroke-width="1"/>
-
-      <!-- Left click zone -->
+      <!-- Click zones -->
       <path id="zone-left_click" class="mouse-button-zone" d="
-        M 62 140
-        L 120 140
-        L 120 15
-        C 80 20, 62 60, 62 140
-      " onclick="selectButton('left_click')"/>
-
-      <!-- Right click zone -->
+        M 150 25 C 130 25, 118 26, 112 28 C 96 34, 82 56, 76 100
+        C 70 140, 66 172, 65 196 L 150 196 Z"
+        onclick="selectButton('left_click')"/>
       <path id="zone-right_click" class="mouse-button-zone" d="
-        M 120 15
-        L 120 140
-        L 178 140
-        C 178 60, 160 20, 120 15
-      " onclick="selectButton('right_click')"/>
+        M 150 25 C 170 25, 182 26, 188 28 C 204 34, 218 56, 224 100
+        C 230 140, 234 172, 235 196 L 150 196 Z"
+        onclick="selectButton('right_click')"/>
 
-      <!-- Middle click (scroll wheel) zone -->
       <rect id="zone-middle_click" class="mouse-button-zone"
-            x="106" y="98" width="28" height="54" rx="14"
+            x="133" y="89" width="34" height="64" rx="17"
             onclick="selectButton('middle_click')"/>
 
-      <!-- Side buttons (shown on left side of mouse = thumb buttons) -->
+      <!-- Thumb buttons, seated just inside the left flank -->
       <rect id="zone-side_forward" class="mouse-button-zone"
-            x="0" y="170" width="66" height="42" rx="4"
+            x="70" y="196" width="40" height="42" rx="8"
             onclick="selectButton('side_forward')"/>
       <rect id="zone-side_back" class="mouse-button-zone"
-            x="0" y="215" width="66" height="42" rx="4"
+            x="70" y="246" width="40" height="42" rx="8"
             onclick="selectButton('side_back')"/>
 
-      <!-- Scroll indicators (top of mouse) -->
+      <!-- Scroll direction chevrons, above/below the wheel -->
       <path id="zone-scroll_up" class="mouse-button-zone"
-            d="M 112 86 L 120 74 L 128 86 Z"
+            d="M 138 84 L 150 70 L 162 84 Z"
             onclick="selectButton('scroll_up')"/>
       <path id="zone-scroll_down" class="mouse-button-zone"
-            d="M 112 163 L 120 175 L 128 163 Z"
+            d="M 138 158 L 150 172 L 162 158 Z"
             onclick="selectButton('scroll_down')"/>
 
-      <!-- Button labels -->
-      <text class="button-label" x="90" y="85" id="label-left_click">L</text>
-      <text class="button-label" x="150" y="85" id="label-right_click">R</text>
-      <text class="button-label" x="120" y="130" id="label-middle_click">M</text>
-      <text class="button-label" x="30" y="197" id="label-side_forward" text-anchor="end" style="cursor:pointer" onclick="selectButton('side_forward')">FWD</text>
-      <text class="button-label" x="30" y="243" id="label-side_back" text-anchor="end" style="cursor:pointer" onclick="selectButton('side_back')">BACK</text>
-      <text class="button-label" x="145" y="82" id="label-scroll_up" font-size="9">UP</text>
-      <text class="button-label" x="145" y="172" id="label-scroll_down" font-size="9">DN</text>
+      <!-- Labels: kept clear of one another -->
+      <text class="button-label" x="108" y="78" id="label-left_click">L</text>
+      <text class="button-label" x="192" y="78" id="label-right_click">R</text>
+      <text class="button-label" x="150" y="126" id="label-middle_click" font-size="10">M</text>
+      <text class="button-label" x="150" y="62" id="label-scroll_up" font-size="9">UP</text>
+      <text class="button-label" x="150" y="190" id="label-scroll_down" font-size="9">DN</text>
+      <text class="button-label" x="90" y="221" id="label-side_forward" font-size="9">FWD</text>
+      <text class="button-label" x="90" y="271" id="label-side_back" font-size="9">BACK</text>
 
-      <!-- Mapping indicators (small tags below labels) -->
-      <text class="button-label" x="30" y="210" id="mapping-side_forward"
-            text-anchor="end" font-size="8" fill="var(--accent)"></text>
-      <text class="button-label" x="30" y="256" id="mapping-side_back"
-            text-anchor="end" font-size="8" fill="var(--accent)"></text>
-      <text class="button-label" x="120" y="143" id="mapping-middle_click"
-            font-size="8" fill="var(--accent)"></text>
-
-      <!-- DPI indicator (bottom) -->
-      <circle cx="120" cy="370" r="12" fill="var(--bg-primary)"
+      <!-- DPI: onboard firmware, not remappable -->
+      <circle cx="150" cy="318" r="14" fill="var(--bg-primary)"
               stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 2"/>
-      <text x="120" y="374" text-anchor="middle" fill="var(--text-muted)"
+      <text x="150" y="322" text-anchor="middle" fill="var(--text-muted)"
             font-size="8" font-family="sans-serif">DPI</text>
-      <text x="120" y="398" text-anchor="middle" fill="var(--text-muted)"
-            font-size="8" font-family="sans-serif">(firmware)</text>
+      <text x="150" y="346" text-anchor="middle" fill="var(--text-muted)"
+            font-size="8" font-family="sans-serif">firmware</text>
     </svg>`;
 }
 
